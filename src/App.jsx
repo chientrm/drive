@@ -1,55 +1,61 @@
-import { useState } from "react";
-import { HashRouter, Routes, Route } from "react-router-dom";
-import reactLogo from "./assets/react.svg";
+import { useState, useEffect } from "react";
+import {
+  HashRouter,
+  Routes,
+  Route,
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 import "./index.css";
-import viteLogo from "/vite.svg";
 
-function Home() {
-  const [count, setCount] = useState(0);
+function FileBrowser() {
+  const [files, setFiles] = useState([]);
+  const [searchParams] = useSearchParams();
+  const currentPath = searchParams.get("path") || "";
+
+  useEffect(() => {
+    fetch(`/drive/api/files?path=${encodeURIComponent(currentPath)}`)
+      .then((res) => res.json())
+      .then(setFiles)
+      .catch((err) => console.error("Error fetching files:", err));
+  }, [currentPath]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
-      <div className="flex space-x-4">
-        <a href="https://vite.dev" target="_blank">
-          <img
-            src={viteLogo}
-            className="h-24 p-6 transition-transform hover:scale-110"
-            alt="Vite logo"
-          />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img
-            src={reactLogo}
-            className="h-24 p-6 transition-transform hover:scale-110"
-            alt="React logo"
-          />
-        </a>
+      <h1 className="text-5xl font-bold mb-8">File Browser</h1>
+      <div className="w-full max-w-4xl bg-gray-800 p-6 rounded-lg shadow-lg">
+        <p className="text-gray-400 mb-4">Current Path: {currentPath || "/"}</p>
+        <ul className="space-y-2">
+          {currentPath && (
+            <li>
+              <Link
+                to={`?path=${encodeURIComponent(
+                  currentPath.split("/").slice(0, -1).join("/")
+                )}`}
+                className="text-blue-400 hover:underline"
+              >
+                .. (Parent Directory)
+              </Link>
+            </li>
+          )}
+          {files.map((file) => (
+            <li key={file.name}>
+              {file.isDirectory ? (
+                <Link
+                  to={`?path=${encodeURIComponent(
+                    currentPath ? `${currentPath}/${file.name}` : file.name
+                  )}`}
+                  className="text-blue-400 hover:underline"
+                >
+                  📁 {file.name}
+                </Link>
+              ) : (
+                <span>📄 {file.name}</span>
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
-      <h1 className="text-5xl font-bold mt-8">Vite + React</h1>
-      <div className="card mt-6 p-6 bg-gray-800 rounded-lg shadow-lg">
-        <button
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          count is {count}
-        </button>
-        <p className="mt-4 text-gray-400">
-          Edit <code className="text-blue-400">src/main.jsx</code> and save to
-          test HMR
-        </p>
-      </div>
-      <p className="mt-6 text-gray-500">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
-  );
-}
-
-function About() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
-      <h1 className="text-5xl font-bold">About Page</h1>
-      <p className="mt-4 text-gray-400">This is the about page.</p>
     </div>
   );
 }
@@ -58,8 +64,7 @@ function App() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
+        <Route path="/" element={<FileBrowser />} />
       </Routes>
     </HashRouter>
   );
